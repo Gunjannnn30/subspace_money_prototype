@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Subspace — Redesign Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fraunces:ital,wght@0,700;0,800;1,700&display=swap" rel="stylesheet">
+<style>
+/* ====== RESET & BASE ====== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: radial-gradient(circle at top left, rgba(124,92,255,0.18), transparent 20%), #04050E;
+  color: #E6E8F0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: radial-gradient(circle at 80% 0%, rgba(61,206,140,0.12), transparent 26%), radial-gradient(circle at 10% 10%, rgba(124,92,255,0.16), transparent 24%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ====== CSS VARIABLES ====== */
+:root {
+  --accent: #3DCE8C;
+  --accent-soft: #D9FAEC;
+  --purple: #7C5CFF;
+  --purple-soft: #E9E6FF;
+  --bg: #04050E;
+  --surface: #0B1221;
+  --surface-soft: #111B34;
+  --surface-light: #141F39;
+  --text: #E6E8F0;
+  --text-muted: #94A3B8;
+  --border: rgba(148,163,184,0.18);
+  --border-strong: rgba(148,163,184,0.28);
+  --white: #FFFFFF;
+  --radius: 22px;
+  --radius-sm: 14px;
+  --shadow: 0 18px 48px rgba(15,23,42,0.28);
+  --shadow-lg: 0 10px 26px rgba(15,23,42,0.2);
+  --warn: #F97316;
+  --warn-light: #FDF1E8;
+}
+
+/* ====== TOP NAV ====== */
+.topnav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(4,5,14,0.92);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(148,163,184,0.08);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 68px;
+  gap: 16px;
+}
+.logo {
+  font-family: 'Fraunces', serif;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--white);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.logo span { color: var(--purple); }
+.nav-right { display: flex; align-items: center; gap: 12px; }
+.nav-cta {
+  background: var(--purple);
+  color: var(--white);
+  border: none; border-radius: 999px;
+  padding: 11px 18px;
+  font-size: 0.88rem; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+  transition: transform 0.2s, background 0.2s;
+}
+.nav-cta:hover { transform: translateY(-1px); background: #634BE4; }
+
+/* ====== BOTTOM NAV (mobile) ====== */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.bnav-item {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 10px 4px 8px;
+  cursor: pointer;
+  border: none; background: transparent;
+  gap: 3px;
+  transition: color 0.15s;
+  color: var(--text-muted);
+}
+.bnav-item.active { color: var(--accent); }
+.bnav-icon { font-size: 1.2rem; line-height: 1; }
+.bnav-label { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.02em; }
+
+/* ====== DESKTOP NAV TABS ====== */
+.desktop-tabs {
+  display: none;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+}
+.dtab {
+  padding: 8px 16px; border-radius: 999px;
+  border: none; background: rgba(255,255,255,0.04);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.86rem; font-weight: 600;
+  color: var(--text-muted); cursor: pointer;
+  transition: all 0.18s;
+}
+.dtab.active { background: rgba(124,92,255,0.16); color: var(--white); }
+.dtab:hover:not(.active) { background: rgba(255,255,255,0.08); color: var(--white); }
+
+/* ====== MAIN CONTENT ====== */
+.main {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 16px 110px;
+}
+@media (min-width: 600px) { .main { padding: 0 24px 110px; } }
+@media (min-width: 900px) { .main { padding: 0 32px 70px; } .bottom-nav { display: none; } .desktop-tabs { display: flex; } }
+
+/* ====== PAGES ====== */
+.page { display: none; animation: fadeIn 0.25s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ====== HERO SECTION ====== */
+.hero {
+  background: linear-gradient(135deg, #08111F 0%, #0D172B 100%);
+  border: 1px solid rgba(148,163,184,0.12);
+  border-radius: 28px;
+  padding: 32px;
+  margin: 16px 0 0;
+  position: relative;
+  overflow: hidden;
+  color: var(--white);
+  box-shadow: 0 20px 60px rgba(4,5,14,0.45);
+}
+.hero::before {
+  content: '';
+  position: absolute; top: -40px; right: -40px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(124,92,255,0.22) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.hero-grid { display: grid; gap: 26px; }
+@media (min-width: 900px) { .hero-grid { grid-template-columns: 1.45fr 1fr; align-items: center; } }
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(124,92,255,0.14); border: 1px solid rgba(124,92,255,0.2);
+  border-radius: 999px; padding: 8px 14px;
+  font-size: 0.75rem; font-weight: 700; color: var(--purple);
+  margin-bottom: 18px;
+}
+.pulse-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+.hero h1 {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(2rem, 4vw, 3.15rem);
+  font-weight: 800;
+  line-height: 1.05;
+  margin-bottom: 14px;
+}
+.hero h1 em { color: var(--accent); font-style: normal; }
+.hero-sub {
+  font-size: 0.95rem; color: rgba(230,232,240,0.8);
+  line-height: 1.75; margin-bottom: 28px;
+  max-width: 520px;
+}
+
+/* ====== SAVINGS CALC ====== */
+.calc {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-sm);
+  padding: 18px;
+}
+.calc-label { font-size: 0.75rem; font-weight: 700; color: rgba(230,232,240,0.75); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 12px; }
+.chips-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 14px; border-radius: 999px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  font-size: 0.78rem; font-weight: 600; color: rgba(230,232,240,0.85);
+  cursor: pointer; transition: all 0.15s; user-select: none;
+}
+.chip.on { background: rgba(61,206,140,0.18); border-color: rgba(61,206,140,0.3); color: var(--white); }
+.chip-amt { font-size: 0.7rem; opacity: 0.78; }
+.calc-result { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
+.calc-col { text-align: center; }
+.calc-num { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 800; }
+.calc-num.strike { color: rgba(255,255,255,0.35); text-decoration: line-through; font-size: 1.1rem; }
+.calc-num.green { color: var(--accent); }
+.calc-desc { font-size: 0.72rem; color: rgba(230,232,240,0.7); margin-top: 2px; }
+.arrow-mid { font-size: 1.25rem; color: rgba(255,255,255,0.35); }
+
+/* ====== STAT STRIP ====== */
+.stats-strip {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 10px; margin: 14px 0;
+}
+@media (min-width: 500px) { .stats-strip { grid-template-columns: repeat(4, 1fr); } }
+.stat-card {
+  background: rgba(255,255,255,0.05); border-radius: var(--radius-sm);
+  padding: 16px 14px; text-align: center;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.stat-num { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 800; color: var(--accent); }
+.stat-lbl { font-size: 0.7rem; color: rgba(230,232,240,0.72); margin-top: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ====== SECTION HEADER ====== */
+.sec-head { margin: 20px 0 12px; }
+.sec-title { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 800; color: #F8FAFC; }
+.sec-sub { font-size: 0.82rem; color: rgba(230,232,240,0.7); margin-top: 4px; line-height: 1.6; }
+
+/* ====== FILTER PILLS ====== */
+.filter-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.filter-row::-webkit-scrollbar { display: none; }
+.fpill {
+  flex-shrink: 0; padding: 8px 16px;
+  border-radius: 999px; border: 1.5px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04); color: rgba(230,232,240,0.9);
+  font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.fpill.active { background: rgba(124,92,255,0.16); color: var(--white); border-color: rgba(124,92,255,0.28); }
+
+/* ====== GROUP CARDS ====== */
+.cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 560px) { .cards-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 820px) { .cards-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.gcard {
+  background: #0B1221;
+  border: 1.5px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius);
+  padding: 18px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  cursor: pointer;
+  position: relative;
+}
+.gcard:hover { box-shadow: var(--shadow); border-color: rgba(124,92,255,0.28); }
+.gcard.noshield { border-color: #F5C6B8; }
+
+.gcard-top { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
+.svc-icon {
+  width: 46px; height: 46px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; flex-shrink: 0;
+}
+.gcard-info { flex: 1; min-width: 0; }
+.gcard-name { font-weight: 700; font-size: 0.95rem; color: var(--white); margin-bottom: 6px; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 999px;
+  font-size: 0.68rem; font-weight: 700;
+}
+.badge.shield { background: rgba(61,206,140,0.14); color: var(--accent); }
+.badge.warn-badge { background: rgba(249,115,22,0.14); color: var(--warn); }
+.badge.stars { background: rgba(255,248,224,0.4); color: #B07D00; }
+
+.gcard-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 16px; }
+
+.gcard-bottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.price-main { font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 800; color: var(--white); }
+.price-per { font-size: 0.72rem; color: rgba(230,232,240,0.75); margin-left: 4px; }
+.price-was { font-size: 0.72rem; color: rgba(230,232,240,0.55); text-decoration: line-through; }
+.slots-row { font-size: 0.72rem; font-weight: 700; margin-top: 4px; }
+.slots-open { color: var(--accent); }
+.slots-full { color: var(--warn); }
+
+.join-btn {
+  padding: 10px 18px; border-radius: 12px;
+  font-size: 0.85rem; font-weight: 700;
+  border: none; cursor: pointer; flex-shrink: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all 0.18s;
+}
+.join-btn.go { background: var(--accent); color: var(--white); }
+.join-btn.go:hover { background: #35B27D; }
+.join-btn.full { background: rgba(255,255,255,0.08); color: var(--text-muted); cursor: default; }
+
+.escrow-note {
+  margin-top: 10px; padding: 10px 12px;
+  background: rgba(61,206,140,0.14);
+  border-radius: 12px;
+  font-size: 0.72rem; color: var(--accent); font-weight: 600;
+  display: flex; align-items: center; gap: 7px;
+}
+.no-shield-note {
+  margin-top: 10px; padding: 10px 12px;
+  background: rgba(249,115,22,0.12);
+  border-radius: 12px;
+  font-size: 0.72rem; color: var(--warn); font-weight: 600;
+  display: flex; align-items: center; gap: 7px;
+}
+
+/* ====== SHIELD PAGE ====== */
+.shield-hero { background: #09121F; border-radius: var(--radius); padding: 32px 28px; margin: 16px 0 12px; color: var(--white); text-align: center; }
+.shield-icon { font-size: 3rem; margin-bottom: 12px; }
+.shield-hero h2 { font-family: 'Fraunces', serif; font-size: 1.9rem; font-weight: 800; margin-bottom: 10px; }
+.shield-hero h2 span { color: var(--accent); }
+.shield-hero p { font-size: 0.92rem; color: rgba(230,232,240,0.75); line-height: 1.75; max-width: 480px; margin: 0 auto 22px; }
+
+.how-card { background: #0F172A; border-radius: var(--radius); padding: 22px; border: 1.5px solid rgba(148,163,184,0.12); margin-bottom: 12px; }
+.how-card-title { font-weight: 700; font-size: 0.94rem; margin-bottom: 16px; color: var(--white); }
+
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.tl-step { display: flex; gap: 14px; }
+.tl-left { display: flex; flex-direction: column; align-items: center; }
+.tl-dot2 { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+.tl-dot2.g { background: var(--accent-soft); color: var(--accent); }
+.tl-dot2.p { background: var(--purple-soft); color: var(--purple); }
+.tl-dot2.o { background: var(--warn-light); color: var(--warn); }
+.tl-line { flex: 1; width: 2px; background: rgba(148,163,184,0.15); margin: 4px 0; min-height: 20px; }
+.tl-content { padding-bottom: 22px; flex: 1; }
+.tl-content strong { font-size: 0.9rem; color: var(--white); }
+.tl-content p { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; line-height: 1.6; }
+
+.shield-rules { display: grid; gap: 10px; }
+@media (min-width: 560px) { .shield-rules { grid-template-columns: 1fr 1fr; } }
+.rule-card { background: #0C172C; border-radius: var(--radius-sm); padding: 16px; display: flex; gap: 12px; align-items: flex-start; }
+.rule-icon { font-size: 1.3rem; flex-shrink: 0; }
+.rule-text { font-size: 0.82rem; line-height: 1.7; color: rgba(230,232,240,0.82); }
+.rule-text strong { display: block; font-size: 0.9rem; margin-bottom: 4px; color: var(--white); }
+
+/* ====== NEGOTIATE PAGE ====== */
+.neg-hero { background: linear-gradient(135deg, #101523, #321765); border-radius: var(--radius); padding: 32px 28px; margin: 16px 0 12px; color: var(--white); position: relative; overflow: hidden; }
+.neg-hero::after { content: ''; position: absolute; bottom: -30px; right: -30px; width: 160px; height: 160px; background: radial-gradient(circle, rgba(124,92,255,0.32) 0%, transparent 70%); border-radius: 50%; }
+.neg-hero h2 { font-family: 'Fraunces', serif; font-size: 1.75rem; font-weight: 800; margin-bottom: 10px; }
+.neg-hero h2 span { color: rgba(191,176,255,0.95); }
+.neg-hero p { font-size: 0.92rem; color: rgba(230,232,240,0.74); line-height: 1.7; margin-bottom: 20px; max-width: 460px; }
+.ticker-box { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 16px 18px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ticker-num { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 800; color: rgba(191,176,255,0.95); }
+.ticker-lbl { font-size: 0.75rem; color: rgba(230,232,240,0.68); margin-top: 2px; }
+.ticker-pulse { background: rgba(124,92,255,0.24); border-radius: 999px; padding: 5px 14px; font-size: 0.75rem; font-weight: 700; color: rgba(191,176,255,0.98); animation: pulse 1.5s ease-in-out infinite; }
+
+.neg-steps { display: grid; gap: 10px; margin-bottom: 12px; }
+@media (min-width: 600px) { .neg-steps { grid-template-columns: repeat(3, 1fr); } }
+.neg-step { background: #0C172C; border-radius: var(--radius-sm); padding: 20px; border: 1.5px solid rgba(148,163,184,0.12); text-align: center; }
+.neg-step-num { width: 34px; height: 34px; border-radius: 50%; background: rgba(124,92,255,0.18); color: var(--purple); font-weight: 800; font-size: 0.92rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+.neg-step strong { font-size: 0.9rem; color: var(--white); display: block; margin-bottom: 6px; }
+.neg-step p { font-size: 0.78rem; color: rgba(230,232,240,0.76); line-height: 1.7; }
+
+.neg-example { background: rgba(61,206,140,0.14); border: 1.5px solid rgba(61,206,140,0.28); border-radius: var(--radius-sm); padding: 18px; }
+.neg-example-title { font-size: 0.82rem; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+.neg-example-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(61,206,140,0.18); }
+.neg-example-item:last-child { border-bottom: none; padding-bottom: 0; }
+.neg-item-name { font-size: 0.84rem; color: var(--white); }
+.neg-item-save { font-size: 0.84rem; font-weight: 700; color: var(--accent); }
+
+/* ====== SPEND BRAIN PAGE ====== */
+.brain-hero { background: #0A1421; border-radius: var(--radius); padding: 26px 22px; margin: 16px 0 12px; color: var(--white); display: flex; align-items: center; gap: 16px; }
+.brain-emoji { font-size: 2.8rem; flex-shrink: 0; }
+.brain-hero h2 { font-family: 'Fraunces', serif; font-size: 1.45rem; font-weight: 800; margin-bottom: 4px; }
+.brain-hero p { font-size: 0.85rem; color: rgba(230,232,240,0.75); line-height: 1.7; }
+
+.insight-card { background: #0C172C; border-radius: var(--radius); padding: 18px; border: 1.5px solid rgba(148,163,184,0.12); margin-bottom: 12px; }
+.insight-top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.insight-icon { width: 40px; height: 40px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+.insight-icon.g { background: rgba(61,206,140,0.18); }
+.insight-icon.p { background: rgba(124,92,255,0.18); }
+.insight-icon.o { background: rgba(249,115,22,0.14); }
+.insight-title { font-weight: 800; font-size: 0.92rem; color: var(--white); }
+.insight-time { font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
+.insight-body { font-size: 0.84rem; color: rgba(230,232,240,0.82); line-height: 1.75; margin-bottom: 14px; }
+.insight-body strong { color: var(--white); }
+.insight-cta { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 12px; font-size: 0.82rem; font-weight: 700; border: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.15s; }
+.insight-cta.g { background: var(--accent); color: var(--white); }
+.insight-cta.p { background: var(--purple); color: var(--white); }
+.insight-cta.o { background: var(--warn); color: var(--white); }
+
+/* ====== LOCAL PAGE ====== */
+.local-hero { background: linear-gradient(135deg, #0A1A16, #0D1D27); border-radius: var(--radius); padding: 28px 22px; margin: 16px 0 12px; color: var(--white); }
+.local-hero h2 { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; }
+.local-hero p { font-size: 0.88rem; color: rgba(230,232,240,0.75); line-height: 1.7; max-width: 430px; }
+.city-row { display: flex; gap: 6px; overflow-x: auto; margin-top: 16px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.city-row::-webkit-scrollbar { display: none; }
+.city-pill { flex-shrink: 0; padding: 8px 16px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 999px; font-size: 0.78rem; font-weight: 600; color: rgba(230,232,240,0.88); cursor: pointer; transition: all 0.15s; }
+.city-pill.active { background: var(--accent); border-color: var(--accent); color: var(--white); }
+.city-pill:hover:not(.active) { background: rgba(255,255,255,0.12); }
+
+.local-card { background: #0B1221; border: 1.5px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 18px; margin-bottom: 12px; display: flex; gap: 16px; transition: box-shadow 0.2s; }
+.local-card:hover { box-shadow: 0 20px 50px rgba(4,5,14,0.3); }
+.local-icon { width: 54px; height: 54px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0; }
+.local-body { flex: 1; min-width: 0; }
+.local-name { font-weight: 700; font-size: 0.95rem; color: var(--white); margin-bottom: 4px; }
+.local-meta { font-size: 0.76rem; color: var(--text-muted); margin-bottom: 7px; }
+.local-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 12px; }
+.local-foot { display: flex; align-items: center; justify-content: space-between; }
+.local-price { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 800; color: var(--white); }
+.local-price span { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); }
+
+.list-cta-card { background: rgba(255,255,255,0.05); border: 2px dashed rgba(148,163,184,0.2); border-radius: var(--radius); padding: 24px; text-align: center; }
+.list-cta-card h3 { font-family: 'Fraunces', serif; font-weight: 800; font-size: 1.14rem; color: var(--white); margin-bottom: 8px; }
+.list-cta-card p { font-size: 0.82rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 18px; }
+.list-btn { background: var(--purple); color: var(--white); border: none; border-radius: 12px; padding: 12px 24px; font-size: 0.88rem; font-weight: 700; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.15s; }
+.list-btn:hover { background: #634BE4; }
+
+/* ====== MODAL ====== */
+.overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(4,5,14,0.8);
+  display: none; align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(6px);
+}
+@media (min-width: 600px) { .overlay { align-items: center; } }
+.overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 28px 24px 32px;
+  width: 100%; max-width: 480px;
+  position: relative;
+  animation: slideUp 0.3s ease;
+  border: 1px solid rgba(148,163,184,0.14);
+}
+@media (min-width: 600px) { .modal { border-radius: 20px; } }
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal-handle { width: 40px; height: 4px; background: rgba(255,255,255,0.12); border-radius: 4px; margin: 0 auto 20px; display: block; }
+@media (min-width: 600px) { .modal-handle { display: none; } }
+.modal-close { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.08); border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 1rem; cursor: pointer; color: var(--white); }
+.modal h3 { font-family: 'Fraunces', serif; font-size: 1.35rem; font-weight: 800; color: var(--white); margin-bottom: 6px; }
+.modal-sub { font-size: 0.86rem; color: rgba(230,232,240,0.7); line-height: 1.6; margin-bottom: 18px; }
+.shield-info {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: rgba(61,206,140,0.13); border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 18px;
+}
+.shield-info-text { font-size: 0.8rem; color: var(--accent); line-height: 1.55; }
+.phone-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.phone-row input {
+  flex: 1; padding: 12px 14px;
+  background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.14);
+  border-radius: 12px; font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.9rem; color: var(--white); outline: none;
+  transition: border-color 0.15s;
+}
+.phone-row input:focus { border-color: var(--accent); }
+.send-btn {
+  background: var(--accent); color: var(--white);
+  border: none; border-radius: 12px;
+  padding: 12px 18px; font-size: 0.88rem; font-weight: 700;
+  cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
+  white-space: nowrap; transition: background 0.15s;
+}
+.send-btn:hover { background: #34b27b; }
+.modal-fine { font-size: 0.74rem; color: rgba(230,232,240,0.65); text-align: center; line-height: 1.5; }
+
+/* ====== FEEDBACK LABELS (in prototype, showing which feedback is addressed) ====== */
+.feedback-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 100px;
+  font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  background: rgba(26,26,46,0.07); color: rgba(230,232,240,0.8);
+  margin-bottom: 8px;
+}
+
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="logo">sub<span>space</span></div>
+  <div class="desktop-tabs">
+    <button class="dtab active" onclick="goTo('home',this)">Browse Groups</button>
+    <button class="dtab" onclick="goTo('shield',this)">� Shield</button>
+    <button class="dtab" onclick="goTo('negotiate',this)">� Negotiate</button>
+    <button class="dtab" onclick="goTo('brain',this)">✦ Spend Brain</button>
+    <button class="dtab" onclick="goTo('local',this)">📍 Local</button>
+  </div>
+  <div class="nav-right">
+    <button class="nav-cta" onclick="openModal()">Join Free</button>
+  </div>
+</nav>
+
+<!-- PAGES CONTAINER -->
+<div class="main">
+
+  <!-- ===== PAGE: HOME / BROWSE ===== -->
+  <div id="page-home" class="page active">
+
+    <!-- Feedback 2: Public browse with savings calculator — no login needed -->
+    <div class="feedback-tag">💡 Feedback 2: Public browse, no login wall</div>
+
+    <div class="hero">
+      <div class="hero-tag"><span class="pulse-dot"></span> No account needed to browse</div>
+      <h1>Stop paying <em>full price</em> for subscriptions</h1>
+      <p class="hero-sub">Browse real groups, see real prices, and join only when you are ready. No signup needed to look around.</p>
+
+      <div class="calc">
+        <div class="calc-label">Pick what you use — see what you would save</div>
+        <div class="chips-wrap">
+          <div class="chip on" data-full="649" data-split="165" onclick="toggleChip(this)">Netflix <span class="chip-amt">₹649</span></div>
+          <div class="chip" data-full="299" data-split="80" onclick="toggleChip(this)">Spotify <span class="chip-amt">₹299</span></div>
+          <div class="chip on" data-full="299" data-split="75" onclick="toggleChip(this)">Prime <span class="chip-amt">₹299</span></div>
+          <div class="chip" data-full="499" data-split="125" onclick="toggleChip(this)">Hotstar <span class="chip-amt">₹499</span></div>
+          <div class="chip" data-full="129" data-split="35" onclick="toggleChip(this)">YT Premium <span class="chip-amt">₹129</span></div>
+          <div class="chip" data-full="360" data-split="90" onclick="toggleChip(this)">Canva Pro <span class="chip-amt">₹360</span></div>
+        </div>
+        <div class="calc-result">
+          <div class="calc-col">
+            <div class="calc-num strike" id="c-full">₹948</div>
+            <div class="calc-desc">You pay now</div>
+          </div>
+          <div class="arrow-mid">→</div>
+          <div class="calc-col">
+            <div class="calc-num green" id="c-split">₹240</div>
+            <div class="calc-desc">With Subspace</div>
+          </div>
+          <div class="arrow-mid">=</div>
+          <div class="calc-col">
+            <div class="calc-num green" id="c-save">₹708</div>
+            <div class="calc-desc">saved/month</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live stats ticker — Feedback 3 (negotiate counter) -->
+    <div class="feedback-tag" style="margin-top:14px;">💡 Feedback 3: Live savings ticker</div>
+    <div class="stats-strip">
+      <div class="stat-card"><div class="stat-num">₹3.4Cr</div><div class="stat-lbl">Saved this month</div></div>
+      <div class="stat-card"><div class="stat-num">847</div><div class="stat-lbl">Bills negotiated</div></div>
+      <div class="stat-card"><div class="stat-num">2,340</div><div class="stat-lbl">Active groups</div></div>
+      <div class="stat-card"><div class="stat-num">4.7★</div><div class="stat-lbl">Avg admin rating</div></div>
+    </div>
+
+    <!-- Group listings -->
+    <div class="sec-head">
+      <div class="sec-title">Available Groups</div>
+      <div class="sec-sub">All Shield-protected groups hold your payment in escrow until access is confirmed</div>
+    </div>
+
+    <div class="filter-row">
+      <button class="fpill active" onclick="filterCards('all',this)">All</button>
+      <button class="fpill" onclick="filterCards('ott',this)">OTT</button>
+      <button class="fpill" onclick="filterCards('music',this)">Music</button>
+      <button class="fpill" onclick="filterCards('work',this)">Productivity</button>
+      <button class="fpill" onclick="filterCards('shield',this)">🛡 Shield Only</button>
+    </div>
+
+    <!-- Feedback 1: Shield vs No Shield clearly labeled -->
+    <div class="feedback-tag">💡 Feedback 1: Admin quality score + Shield status visible before joining</div>
+    <div class="cards-grid" id="cards-grid"></div>
+  </div>
+
+  <!-- ===== PAGE: SHIELD ===== -->
+  <div id="page-shield" class="page">
+
+    <div class="feedback-tag" style="margin-top:16px;">💡 Feedback 1: Subspace Shield — solving the admin-member trust gap</div>
+
+    <div class="shield-hero">
+      <div class="shield-icon">🛡</div>
+      <h2>Subspace <span>Shield</span></h2>
+      <p>Your payment does not go to the admin until you confirm you have received access. No more getting kicked out and chasing refunds.</p>
+      <button class="nav-cta" onclick="openModal()">Get Shield Protection</button>
+    </div>
+
+    <div class="how-card">
+      <div class="how-card-title">How a protected transaction works</div>
+      <div class="timeline">
+        <div class="tl-step">
+          <div class="tl-left"><div class="tl-dot2 p">1</div><div class="tl-line"></div></div>
+          <div class="tl-content"><strong>You join a group and pay</strong><p>Your money goes into Subspace escrow — not to the admin yet.</p></div>
+        </div>
+        <div class="tl-step">
+          <div class="tl-left"><div class="tl-dot2 g">2</div><div class="tl-line"></div></div>
+          <div class="tl-content"><strong>Admin gives you access</strong><p>You confirm the login works. A 48-hour countdown starts.</p></div>
+        </div>
+        <div class="tl-step">
+          <div class="tl-left"><div class="tl-dot2 g">3</div><div class="tl-line"></div></div>
+          <div class="tl-content"><strong>48 hours pass, no issue</strong><p>Payment is automatically released to the admin. Done.</p></div>
+        </div>
+        <div class="tl-step">
+          <div class="tl-left"><div class="tl-dot2 o">!</div></div>
+          <div class="tl-content" style="padding-bottom:0"><strong>Problem? Tap "Access Denied"</strong><p>Escrow is frozen. A dispute opens. Resolved in 24 hours or you get a full refund.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-head">
+      <div class="sec-title">The rules that protect you</div>
+    </div>
+    <div class="shield-rules">
+      <div class="rule-card"><div class="rule-icon">⭐</div><div class="rule-text"><strong>Admin quality scores are public</strong>Every admin has a rating that is visible before you join. Low-rated groups appear lower in the list.</div></div>
+      <div class="rule-card"><div class="rule-icon">🚫</div><div class="rule-text"><strong>Three complaints, group suspended</strong>Admins with three unresolved complaints are automatically suspended pending a review.</div></div>
+      <div class="rule-card"><div class="rule-icon">⚡</div><div class="rule-text"><strong>Refunds in 2 minutes</strong>If access is never granted, your money comes back before you can finish a cup of chai.</div></div>
+      <div class="rule-card"><div class="rule-icon">🔒</div><div class="rule-text"><strong>No retaliation possible</strong>Admins cannot rate or remove members who open disputes. Platform protects your right to complain.</div></div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: NEGOTIATE ===== -->
+  <div id="page-negotiate" class="page">
+
+    <div class="feedback-tag" style="margin-top:16px;">💡 Feedback 3: Negotiate API made visible — not buried in the background</div>
+
+    <div class="neg-hero">
+      <div class="hero-tag" style="margin-bottom:12px;"><span class="pulse-dot" style="background:#BFB0FF"></span> Now live</div>
+      <h2>We negotiate your <span>bills down</span></h2>
+      <p>Connect your account and we will automatically find every recurring bill you are overpaying, then negotiate better rates on your behalf. You keep 80% of whatever we save.</p>
+      <div class="ticker-box">
+        <div>
+          <div class="ticker-num">₹3,40,00,000</div>
+          <div class="ticker-lbl">Total saved for Subspace users this month</div>
+        </div>
+        <div class="ticker-pulse">● Live</div>
+      </div>
+    </div>
+
+    <div class="sec-head">
+      <div class="sec-title">How it works in three steps</div>
+    </div>
+    <div class="neg-steps">
+      <div class="neg-step"><div class="neg-step-num">1</div><strong>Connect your account</strong><p>Give us SMS or bank permission. We scan for all recurring payments automatically.</p></div>
+      <div class="neg-step"><div class="neg-step-num">2</div><strong>We find the savings</strong><p>Our system identifies which bills have headroom for negotiation — telcos, broadband, and more.</p></div>
+      <div class="neg-step"><div class="neg-step-num">3</div><strong>We negotiate. You keep 80%.</strong><p>We contact the provider and get you a better rate. You only pay us if we succeed.</p></div>
+    </div>
+
+    <div class="sec-head">
+      <div class="sec-title">What we have already saved for users like you</div>
+    </div>
+    <div class="neg-example">
+      <div class="neg-example-title">Recent negotiations — May 2026</div>
+      <div class="neg-example-item"><span class="neg-item-name">📱 Airtel 5G Plan</span><span class="neg-item-save">Saved ₹220/mo</span></div>
+      <div class="neg-example-item"><span class="neg-item-name">🌐 ACT Fibernet</span><span class="neg-item-save">Saved ₹180/mo</span></div>
+      <div class="neg-example-item"><span class="neg-item-name">📱 Jio Postpaid</span><span class="neg-item-save">Saved ₹140/mo</span></div>
+      <div class="neg-example-item"><span class="neg-item-name">☁ Microsoft 365</span><span class="neg-item-save">Saved ₹90/mo</span></div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <button class="nav-cta" style="width:100%;padding:14px;font-size:0.95rem;border-radius:10px;" onclick="openModal()">Start negotiating my bills →</button>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: SPEND BRAIN ===== -->
+  <div id="page-brain" class="page">
+
+    <div class="feedback-tag" style="margin-top:16px;">💡 Feedback 5: AI made user-facing — Spend Brain via WhatsApp</div>
+
+    <div class="brain-hero">
+      <div class="brain-emoji">✦</div>
+      <div>
+        <h2>Spend Brain</h2>
+        <p>A short WhatsApp message on the 1st of every month. Your subscriptions, your overspend, and exactly what to do about it.</p>
+      </div>
+    </div>
+
+    <div class="sec-head">
+      <div class="sec-title">Your May 2026 insights</div>
+      <div class="sec-sub">Based on 4 active subscriptions you are tracking — total spend Rs. 2,840 per month</div>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-top"><div class="insight-icon g">📺</div><div><div class="insight-title">You are overpaying on Netflix</div><div class="insight-time">Renews in 12 days</div></div></div>
+      <div class="insight-body">You are paying <strong>Rs. 649 per month</strong> for Netflix solo. We found a Shield-protected group where four people share a plan. Your cost would drop to <strong>Rs. 165 per month</strong> — a saving of Rs. 484 every month.</div>
+      <button class="insight-cta g" onclick="goTo('home', document.querySelector('.dtab'))">Find a group →</button>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-top"><div class="insight-icon p">📱</div><div><div class="insight-title">Your Airtel plan has negotiation headroom</div><div class="insight-time">Bill due in 6 days</div></div></div>
+      <div class="insight-body">Your Airtel broadband plan at <strong>Rs. 999 per month</strong> has not been renegotiated in 14 months. Users on similar plans save an average of <strong>Rs. 180 per month</strong> when we negotiate on their behalf.</div>
+      <button class="insight-cta p" onclick="goTo('negotiate', document.querySelectorAll('.dtab')[2])">Negotiate my bill →</button>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-top"><div class="insight-icon o">🎵</div><div><div class="insight-title">Spotify renewal is coming up</div><div class="insight-time">Renews in 3 days</div></div></div>
+      <div class="insight-body">You pay <strong>Rs. 299 per month</strong> for Spotify solo. A shared group slot is available right now at <strong>Rs. 80 per month</strong>. You can switch before your next renewal and save immediately.</div>
+      <button class="insight-cta o" onclick="goTo('home', document.querySelector('.dtab'))">Switch before renewal →</button>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: LOCAL MARKET ===== -->
+  <div id="page-local" class="page">
+
+    <div class="feedback-tag" style="margin-top:16px;">💡 Feedback 4: Local marketplace made visible — India's real moat</div>
+
+    <div class="local-hero">
+      <h2>Your city's subscriptions, on Subspace</h2>
+      <p>Gyms, tiffin services, yoga studios, tutoring — discover and subscribe to local services near you. India's first hyperlocal subscription marketplace.</p>
+      <div class="city-row">
+        <button class="city-pill active">Bangalore</button>
+        <button class="city-pill">Mumbai</button>
+        <button class="city-pill">Delhi NCR</button>
+        <button class="city-pill">Hyderabad</button>
+        <button class="city-pill">Pune</button>
+        <button class="city-pill">Chennai</button>
+      </div>
+    </div>
+
+    <div class="sec-head">
+      <div class="sec-title">Available in Bangalore</div>
+      <div class="sec-sub">All local providers are verified. Payments protected by Subspace Shield.</div>
+    </div>
+
+    <div class="local-card">
+      <div class="local-icon" style="background:#FFF3CD">🥘</div>
+      <div class="local-body">
+        <div class="local-name">Annapurna Home Tiffin</div>
+        <div class="local-meta">📍 Koramangala · ⭐ 4.8 · 120 subscribers</div>
+        <div class="local-desc">Homestyle North Indian meals, two per day. Running since 2018, over 120 active subscribers across Koramangala and Indiranagar.</div>
+        <div class="local-foot">
+          <div><div class="local-price">₹3,200<span>/month</span></div><div style="font-size:0.7rem;color:var(--accent);font-weight:600;">5 slots open</div></div>
+          <button class="join-btn go" onclick="openModal()">Subscribe</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="local-card">
+      <div class="local-icon" style="background:#E8F5E9">🧘</div>
+      <div class="local-body">
+        <div class="local-name">Surya Yoga Studio</div>
+        <div class="local-meta">📍 HSR Layout · ⭐ 4.9 · 84 subscribers</div>
+        <div class="local-desc">Morning and evening Hatha and Vinyasa batches. Studio has been on Subspace for 8 months with zero refund requests.</div>
+        <div class="local-foot">
+          <div><div class="local-price">₹1,800<span>/month</span></div><div style="font-size:0.7rem;color:var(--accent);font-weight:600;">8 slots open</div></div>
+          <button class="join-btn go" onclick="openModal()">Subscribe</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="local-card">
+      <div class="local-icon" style="background:#E8EAF6">📚</div>
+      <div class="local-body">
+        <div class="local-name">Priya's Math Coaching</div>
+        <div class="local-meta">📍 Jayanagar · ⭐ 5.0 · 28 students</div>
+        <div class="local-desc">Class 9 to 12 CBSE and ICSE maths. Online and offline options available. One free demo class before you subscribe.</div>
+        <div class="local-foot">
+          <div><div class="local-price">₹2,500<span>/month</span></div><div style="font-size:0.7rem;color:var(--accent);font-weight:600;">3 slots open</div></div>
+          <button class="join-btn go" onclick="openModal()">Subscribe</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="list-cta-card">
+      <h3>Run a local subscription service?</h3>
+      <p>List your gym, tiffin service, studio, or any recurring service on Subspace. Reach people in your city who are already looking. Free for the first three months.</p>
+      <button class="list-btn" onclick="openModal()">List your service for free →</button>
+    </div>
+  </div>
+
+</div><!-- end .main -->
+
+<!-- BOTTOM NAV (mobile) -->
+<nav class="bottom-nav">
+  <button class="bnav-item active" onclick="goToMobile('home',this)"><span class="bnav-icon">🏠</span><span class="bnav-label">Browse</span></button>
+  <button class="bnav-item" onclick="goToMobile('shield',this)"><span class="bnav-icon">�</span><span class="bnav-label">Shield</span></button>
+  <button class="bnav-item" onclick="goToMobile('negotiate',this)"><span class="bnav-icon">�</span><span class="bnav-label">Negotiate</span></button>
+  <button class="bnav-item" onclick="goToMobile('brain',this)"><span class="bnav-icon">✦</span><span class="bnav-label">Insights</span></button>
+  <button class="bnav-item" onclick="goToMobile('local',this)"><span class="bnav-icon">📍</span><span class="bnav-label">Local</span></button>
+</nav>
+
+<!-- JOIN MODAL -->
+<div class="overlay" id="overlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <span class="modal-handle"></span>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3>Join in 30 seconds</h3>
+    <p class="modal-sub">Enter your phone number. We send a WhatsApp OTP. No password, no spam, no nonsense.</p>
+    <div class="shield-info">
+      <span>🛡</span>
+      <div class="shield-info-text">Your first payment is protected by Subspace Shield. We hold it in escrow until you confirm access — so you are never at risk.</div>
+    </div>
+    <div class="phone-row">
+      <input type="tel" placeholder="+91 98765 43210" id="phone-in">
+      <button class="send-btn" onclick="doJoin()">Send OTP</button>
+    </div>
+    <div class="modal-fine">By continuing you agree to our Terms of Service. We never share or sell your phone number.</div>
+  </div>
+</div>
+
+<script>
+/* ── GROUP DATA ── */
+const groups = [
+  { id:1, name:'Netflix Standard', icon:'🎬', bg:'#FDE8E8', cat:'ott', shield:true, admin:'Rahul M.', stars:'4.8', slots:'2 of 4 filled', full:false, price:165, was:649, desc:'HD, 2 screens. Rahul has run this group for 14 months with zero refund requests. Separate login for each member.' },
+  { id:2, name:'Spotify Premium', icon:'🎵', bg:'#E8F9EE', cat:'music', shield:true, admin:'Priya K.', stars:'5.0', slots:'3 of 6 filled', full:false, price:80, was:299, desc:'Ad-free music and downloads. Family plan split six ways. Priya runs four active groups — all rated 5 stars.' },
+  { id:3, name:'Amazon Prime', icon:'📦', bg:'#FFF3D6', cat:'ott', shield:true, admin:'Aarav S.', stars:'4.6', slots:'3 of 4 filled', full:false, price:75, was:299, desc:'Prime Video plus free delivery. Each member gets their own login. Admin response time under 10 minutes.' },
+  { id:4, name:'Canva Pro', icon:'🎨', bg:'#F0EEFF', cat:'work', shield:true, admin:'Divya R.', stars:'4.9', slots:'4 of 5 filled', full:false, price:90, was:360, desc:'Full Pro features, shared team workspace. Popular with designers and college students. 1 slot left.' },
+  { id:5, name:'YouTube Premium', icon:'▶', bg:'#FFE8E8', cat:'ott', shield:false, admin:'Karan T.', stars:'3.2', slots:'4 of 4 filled', full:true, price:35, was:129, desc:'Ad-free YouTube and Music. Group is currently full. This group has no Shield protection — join at your own risk.' },
+  { id:6, name:'JioHotstar', icon:'📺', bg:'#E8EEFF', cat:'ott', shield:true, admin:'Sneha L.', stars:'4.7', slots:'2 of 4 filled', full:false, price:125, was:499, desc:'Sports and entertainment. Includes IPL and all major sports. Separate login for each member confirmed.' },
+];
+
+let activeFilter = 'all';
+
+function renderCards(filter) {
+  const grid = document.getElementById('cards-grid');
+  const list = filter === 'all' ? groups : filter === 'shield' ? groups.filter(g=>g.shield) : groups.filter(g=>g.cat===filter);
+  grid.innerHTML = list.map(g => `
+    <div class="gcard ${g.shield?'':'noshield'}">
+      <div class="gcard-top">
+        <div class="svc-icon" style="background:${g.bg}">${g.icon}</div>
+        <div class="gcard-info">
+          <div class="gcard-name">${g.name}</div>
+          <div class="badges">
+            ${g.shield ? '<span class="badge shield">🛡 Shield</span>' : '<span class="badge warn-badge">⚠ No Shield</span>'}
+            <span class="badge stars">★ ${g.stars} — ${g.admin}</span>
+          </div>
+        </div>
+      </div>
+      <div class="gcard-desc">${g.desc}</div>
+      <div class="gcard-bottom">
+        <div class="price-block">
+          <div><span class="price-main">₹${g.price}</span><span class="price-per">/mo</span></div>
+          <div class="price-was">₹${g.was} solo</div>
+          <div class="slots-row ${g.full?'slots-full':'slots-open'}">${g.slots}</div>
+        </div>
+        <button class="join-btn ${g.full?'full':'go'}" onclick="${g.full?'':'openModal()'}">${g.full?'Group full':'Join Group'}</button>
+      </div>
+      ${g.shield ? '<div class="escrow-note">🛡 Payment held in escrow until you confirm access</div>' : '<div class="no-shield-note">⚠ This group has no escrow protection</div>'}
+    </div>
+  `).join('');
+}
+
+function filterCards(cat, btn) {
+  document.querySelectorAll('.fpill').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards(cat);
+}
+
+/* ── CALC ── */
+function toggleChip(el) { el.classList.toggle('on'); recalc(); }
+function recalc() {
+  let full=0, split=0;
+  document.querySelectorAll('.chip.on').forEach(c=>{ full+=+c.dataset.full; split+=+c.dataset.split; });
+  document.getElementById('c-full').textContent = `₹${full}`;
+  document.getElementById('c-split').textContent = `₹${split}`;
+  document.getElementById('c-save').textContent = `₹${full-split}`;
+}
+
+/* ── NAVIGATION ── */
+function goTo(page, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.dtab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.bnav-item').forEach(t=>t.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  window.scrollTo(0,0);
+}
+function goToMobile(page, btn) {
+  goTo(page, btn);
+  const map = {home:0,shield:1,negotiate:2,brain:3,local:4};
+  const dtabs = document.querySelectorAll('.dtab');
+  dtabs.forEach(t=>t.classList.remove('active'));
+  if(dtabs[map[page]]) dtabs[map[page]].classList.add('active');
+}
+
+/* ── MODAL ── */
+function openModal() { document.getElementById('overlay').classList.add('open'); }
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+function closeModalOutside(e) { if(e.target===document.getElementById('overlay')) closeModal(); }
+function doJoin() {
+  const inp = document.getElementById('phone-in');
+  if(inp.value.trim().length >= 6) {
+    closeModal();
+    setTimeout(()=>alert('OTP sent! (Prototype demo — not a real app)'),200);
+  } else {
+    inp.style.borderColor='var(--warn)';
+    inp.placeholder='Please enter a valid number';
+    setTimeout(()=>{ inp.style.borderColor=''; },2000);
+  }
+}
+
+/* ── CITY PILLS ── */
+document.querySelectorAll('.city-pill').forEach(p=>{
+  p.addEventListener('click', function(){
+    document.querySelectorAll('.city-pill').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+/* INIT */
+renderCards('all');
+</script>
+</body>
+</html>
