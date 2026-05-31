@@ -99,29 +99,6 @@ This is a **product analysis and interactive prototype** of Subspace.money, Indi
 
 ---
 
-## Prototype Features
-
-This interactive HTML prototype demonstrates:
-- ✅ Dark Subspace-inspired theme with professional branding
-- ✅ Public marketplace with 6 service groups (Netflix, Spotify, Prime, Canva, YouTube, JioHotstar)
-- ✅ Live savings calculator showing "pick what you use — see what you save"
-- ✅ Shield protection system with escrow indicators and dispute flow
-- ✅ Bill negotiation interface (live ticker, savings estimates)
-- ✅ Local marketplace with city-specific services
-- ✅ Fully responsive design (desktop + mobile navigation)
-- ✅ Professional logos and icons throughout
-
----
-
-## How to Use
-
-1. Open `subspace.html` in any modern browser
-2. Browse the prototyped pages using top navigation or bottom mobile nav
-3. Use the calculator to select services and see savings breakdown
-4. Filter by Shield protection status
-5. View the Shield protection flow and rules
-
----
 
 ## Tech Stack
 
